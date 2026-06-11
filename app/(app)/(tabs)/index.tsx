@@ -15,18 +15,23 @@ export default function HomeScreen() {
         <Text variant="title">{user?.name ?? "there"} 👋</Text>
       </View>
 
+      <View className="mt-6 flex-row gap-3">
+        <Card className="flex-1 gap-1">
+          <Text variant="muted">Receivable</Text>
+          <Text variant="subtitle">₹0</Text>
+        </Card>
+        <Card className="flex-1 gap-1">
+          <Text variant="muted">Payable</Text>
+          <Text variant="subtitle">₹0</Text>
+        </Card>
+      </View>
+
       <View className="mt-6 gap-3">
         <Card className="gap-1">
-          <Text className="font-semibold">Your starter is ready</Text>
+          <Text className="font-semibold">Recent bills</Text>
           <Text variant="muted">
-            This screen reads the signed-in user from the Zustand auth store.
-          </Text>
-        </Card>
-        <Card className="gap-1">
-          <Text className="font-semibold">Next steps</Text>
-          <Text variant="muted">
-            Swap the mock repository for a real backend in
-            src/services/repositories/index.ts — no screen changes required.
+            No bills yet. Use the Scan tab to capture a receipt, or add one from
+            the Bills tab.
           </Text>
         </Card>
       </View>
