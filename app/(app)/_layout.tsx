@@ -11,8 +11,14 @@ export default function AppLayout() {
     <AuthGuard>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="profile" options={{ headerShown: true, title: "Profile" }} />
-        <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
+        <Stack.Screen
+          name="profile"
+          options={{ headerShown: true, title: "Profile" }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{ headerShown: true, title: "Settings" }}
+        />
       </Stack>
     </AuthGuard>
   );
