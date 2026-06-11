@@ -1,4 +1,4 @@
-# Expo Mobile Starter Kit
+# React Native Starter Kit
 
 A production-grade React Native starter built to scale to **hundreds of screens** — SaaS, internal enterprise tools, AI apps, and consumer apps. Batteries included, **no backend lock-in**: ships with a dummy auth/API layer behind clean interfaces so you can plug in Supabase, Firebase, a REST/GraphQL API, Hono, or FastAPI later **without touching a single screen**.
 

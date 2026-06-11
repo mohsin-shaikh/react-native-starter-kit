@@ -1,5 +1,5 @@
 {
-  "name": "expo-mobile-starter-kit",
+  "name": "react-native-starter-kit",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "packageManager": "pnpm@9.12.0",
