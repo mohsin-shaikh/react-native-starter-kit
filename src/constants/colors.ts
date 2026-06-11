@@ -1,0 +1,68 @@
+/**
+ * The semantic color palette as JS values, per theme.
+ *
+ * `global.css` owns these tokens for anything styled with `className`. But
+ * some things can't use className — Lucide icons, react-native-svg, React
+ * Navigation chrome, status bar — and need the raw color in JS. This is the
+ * single source of truth for those cases. Keep it in sync with global.css.
+ */
+export type ColorTokens = {
+  background: string;
+  foreground: string;
+  card: string;
+  cardForeground: string;
+  primary: string;
+  primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
+  muted: string;
+  mutedForeground: string;
+  accent: string;
+  accentForeground: string;
+  destructive: string;
+  destructiveForeground: string;
+  border: string;
+  input: string;
+  ring: string;
+};
+
+export const palette: { light: ColorTokens; dark: ColorTokens } = {
+  light: {
+    background: "hsl(0 0% 100%)",
+    foreground: "hsl(240 10% 3.9%)",
+    card: "hsl(0 0% 100%)",
+    cardForeground: "hsl(240 10% 3.9%)",
+    primary: "hsl(240 5.9% 10%)",
+    primaryForeground: "hsl(0 0% 98%)",
+    secondary: "hsl(240 4.8% 95.9%)",
+    secondaryForeground: "hsl(240 5.9% 10%)",
+    muted: "hsl(240 4.8% 95.9%)",
+    mutedForeground: "hsl(240 3.8% 46.1%)",
+    accent: "hsl(240 4.8% 95.9%)",
+    accentForeground: "hsl(240 5.9% 10%)",
+    destructive: "hsl(0 84.2% 60.2%)",
+    destructiveForeground: "hsl(0 0% 98%)",
+    border: "hsl(240 5.9% 90%)",
+    input: "hsl(240 5.9% 90%)",
+    ring: "hsl(240 5.9% 10%)",
+  },
+  dark: {
+    background: "hsl(240 10% 3.9%)",
+    foreground: "hsl(0 0% 98%)",
+    card: "hsl(240 10% 3.9%)",
+    cardForeground: "hsl(0 0% 98%)",
+    primary: "hsl(0 0% 98%)",
+    primaryForeground: "hsl(240 5.9% 10%)",
+    secondary: "hsl(240 3.7% 15.9%)",
+    secondaryForeground: "hsl(0 0% 98%)",
+    muted: "hsl(240 3.7% 15.9%)",
+    mutedForeground: "hsl(240 5% 64.9%)",
+    accent: "hsl(240 3.7% 15.9%)",
+    accentForeground: "hsl(0 0% 98%)",
+    destructive: "hsl(0 62.8% 30.6%)",
+    destructiveForeground: "hsl(0 0% 98%)",
+    border: "hsl(240 3.7% 15.9%)",
+    input: "hsl(240 3.7% 15.9%)",
+    ring: "hsl(240 4.9% 83.9%)",
+  },
+};
