@@ -9,7 +9,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
 
   return (
-    <Screen scroll className="py-6" edges={["bottom"]}>
+    <Screen scroll className="py-6">
       <View className="gap-1">
         <Text variant="muted">Welcome back,</Text>
         <Text variant="title">{user?.name ?? "there"} 👋</Text>

@@ -26,7 +26,7 @@ export default function MoreScreen() {
   ] as const;
 
   return (
-    <Screen scroll className="py-6" edges={["bottom"]}>
+    <Screen scroll className="py-6">
       <Text variant="heading">More</Text>
 
       <Card className="mt-6 gap-0 p-0">

@@ -10,7 +10,7 @@ export default function ScanScreen() {
   const colors = useThemeColors();
 
   return (
-    <Screen className="items-center justify-center gap-6" edges={["bottom"]}>
+    <Screen className="items-center justify-center gap-6">
       <View className="h-24 w-24 items-center justify-center rounded-full bg-secondary">
         <ScanLine color={colors.foreground} size={40} />
       </View>

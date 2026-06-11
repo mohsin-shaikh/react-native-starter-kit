@@ -9,7 +9,7 @@ import { House, Menu, ReceiptText, ScanLine, Users } from "lucide-react-native";
  */
 export default function TabsLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: true }}>
+    <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
         name="index"
         options={{
