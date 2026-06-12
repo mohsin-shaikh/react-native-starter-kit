@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: "auth.refreshToken",
   ONBOARDING_STATE: "onboarding.state",
   THEME: "preferences.theme",
+  ACTIVE_ORG: "organization.activeId",
 } as const;
 
 /** Canonical route paths. Use these instead of hand-typed strings. */

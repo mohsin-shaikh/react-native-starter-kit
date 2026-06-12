@@ -1,6 +1,7 @@
 import { View } from "react-native";
 
 import { Screen } from "@/components/layout/screen";
+import { OrganizationSwitcher } from "@/components/organization/organization-switcher";
 import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,6 +11,10 @@ export default function HomeScreen() {
 
   return (
     <Screen scroll className="py-6">
+      <View className="mb-6 flex-row">
+        <OrganizationSwitcher />
+      </View>
+
       <View className="gap-1">
         <Text variant="muted">Welcome back,</Text>
         <Text variant="title">{user?.name ?? "there"} 👋</Text>
