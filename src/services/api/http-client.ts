@@ -1,7 +1,7 @@
 import { AppError, kindFromStatus } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 
-import type { AuthTokenProvider, HttpClient, RequestOptions } from "./types";
+import type { AuthHeadersProvider, HttpClient, RequestOptions } from "./types";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
@@ -9,9 +9,9 @@ const DEFAULT_TIMEOUT_MS = 15_000;
  * fetch-based HttpClient with the cross-cutting concerns every screen would
  * otherwise reimplement:
  *  - base URL + query serialization
- *  - bearer token injection (via AuthTokenProvider)
+ *  - auth header injection (via AuthHeadersProvider — the session cookie)
  *  - timeouts (AbortController)
- *  - transparent 401 -> refresh -> retry-once
+ *  - 401 -> onAuthFailure (sessions aren't refreshable; a 401 is final)
  *  - normalization of every failure into an AppError
  *
  * This is the only place that knows about HTTP. Repositories above it speak
@@ -20,7 +20,7 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 export class FetchHttpClient implements HttpClient {
   constructor(
     private readonly baseUrl: string,
-    private readonly tokenProvider?: AuthTokenProvider,
+    private readonly authProvider?: AuthHeadersProvider,
   ) {}
 
   get<T>(path: string, options?: RequestOptions) {
@@ -57,7 +57,6 @@ export class FetchHttpClient implements HttpClient {
     path: string,
     body?: unknown,
     options: RequestOptions = {},
-    isRetry = false,
   ): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(
@@ -68,13 +67,9 @@ export class FetchHttpClient implements HttpClient {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
+      ...(!options.skipAuth ? this.authProvider?.getAuthHeaders() : undefined),
       ...options.headers,
     };
-
-    if (!options.skipAuth && this.tokenProvider) {
-      const token = await this.tokenProvider.getAccessToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
 
     try {
       const response = await fetch(this.buildUrl(path, options.params), {
@@ -84,18 +79,10 @@ export class FetchHttpClient implements HttpClient {
         signal: options.signal ?? controller.signal,
       });
 
-      if (
-        response.status === 401 &&
-        !options.skipAuth &&
-        !isRetry &&
-        this.tokenProvider
-      ) {
-        // Try a single transparent refresh, then replay the original request.
-        const fresh = await this.tokenProvider.refreshAccessToken();
-        if (fresh) {
-          return this.request<T>(method, path, body, options, true);
-        }
-        this.tokenProvider.onAuthFailure();
+      if (response.status === 401 && !options.skipAuth) {
+        // The session is gone (revoked/expired server-side). There is nothing
+        // to refresh — flip the app to signed-out and fall through to throw.
+        this.authProvider?.onAuthFailure();
       }
 
       if (!response.ok) {

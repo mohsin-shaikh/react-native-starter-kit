@@ -13,6 +13,24 @@ export interface User {
   avatarUrl?: string;
   roles: Role[];
   createdAt: string;
+  /**
+   * Server-side onboarding flag (app-one backend). The local onboarding
+   * store still drives the guard for now; this is surfaced so a later phase
+   * can make the server value win.
+   */
+  onboardingComplete?: boolean;
+}
+
+/**
+ * A tenant the user belongs to. All business data (bills, parties, …) is
+ * scoped to the ACTIVE organization, which lives on the server session
+ * (better-auth organization plugin) — not on the client.
+ */
+export interface Organization {
+  id: string;
+  name: string;
+  slug?: string;
+  logoUrl?: string;
 }
 
 /** A normalized async resource state for non-Query local flows. */

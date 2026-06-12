@@ -1,26 +1,47 @@
-import { Building2, Check, ChevronDown } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Building2, Check, ChevronDown, Plus } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/text";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import {
-  selectActiveOrg,
-  useOrganizationStore,
-} from "@/stores/organization.store";
+  useOrganizationsQuery,
+  useSetActiveOrganizationMutation,
+} from "@/queries/organization.queries";
+import { useOrganizationStore } from "@/stores/organization.store";
+import type { Organization } from "@/types";
 import { cn } from "@/utils/cn";
 
 /**
- * Tenant switcher for the home header. Shows the active organization and opens
- * a sheet to switch between the ones the user belongs to.
+ * Tenant switcher for the home header. Shows the active organization (a
+ * session value mirrored in the organization store) and opens a sheet to
+ * switch between the ones the user belongs to (server list via React Query).
+ * Switching is optimistic — the mutation rolls the mirror back on failure.
  */
 export function OrganizationSwitcher() {
   const colors = useThemeColors();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const organizations = useOrganizationStore((s) => s.organizations);
-  const activeOrg = useOrganizationStore(selectActiveOrg);
-  const setActiveOrg = useOrganizationStore((s) => s.setActiveOrg);
+  const {
+    data: organizations,
+    isPending,
+    isError,
+    refetch,
+  } = useOrganizationsQuery();
+  const activeOrgId = useOrganizationStore((s) => s.activeOrgId);
+  const switchOrg = useSetActiveOrganizationMutation();
+
+  const activeOrg = organizations?.find((o) => o.id === activeOrgId);
+  // `activeOrgId` hydrates with the session; show a neutral label while the
+  // list is loading or when the user has no organization yet.
+  const triggerLabel = activeOrg?.name ?? (isPending ? "…" : "No organization");
+
+  const onSelect = (org: Organization) => {
+    setOpen(false);
+    if (org.id !== activeOrgId) switchOrg.mutate(org.id);
+  };
 
   return (
     <>
@@ -34,7 +55,7 @@ export function OrganizationSwitcher() {
           <Building2 color={colors.foreground} size={16} />
         </View>
         <Text className="max-w-[180px] font-semibold" numberOfLines={1}>
-          {activeOrg.name}
+          {triggerLabel}
         </Text>
         <ChevronDown color={colors.mutedForeground} size={16} />
       </Pressable>
@@ -58,15 +79,37 @@ export function OrganizationSwitcher() {
               Switch organization
             </Text>
 
-            {organizations.map((org) => {
-              const active = org.id === activeOrg.id;
+            {isPending && (
+              <View className="items-center py-6">
+                <ActivityIndicator color={colors.foreground} />
+              </View>
+            )}
+
+            {isError && (
+              <Pressable
+                onPress={() => refetch()}
+                className="items-center rounded-lg p-4 active:bg-accent"
+              >
+                <Text variant="muted">
+                  Couldn’t load organizations. Tap to retry.
+                </Text>
+              </Pressable>
+            )}
+
+            {organizations?.length === 0 && (
+              <View className="items-center p-4">
+                <Text variant="muted">
+                  You don’t belong to any organization yet.
+                </Text>
+              </View>
+            )}
+
+            {organizations?.map((org) => {
+              const active = org.id === activeOrgId;
               return (
                 <Pressable
                   key={org.id}
-                  onPress={() => {
-                    setActiveOrg(org.id);
-                    setOpen(false);
-                  }}
+                  onPress={() => onSelect(org)}
                   className="flex-row items-center gap-3 rounded-lg p-3 active:bg-accent"
                 >
                   <View className="h-9 w-9 items-center justify-center rounded-full bg-secondary">
@@ -82,6 +125,22 @@ export function OrganizationSwitcher() {
                 </Pressable>
               );
             })}
+
+            <Pressable
+              onPress={() => {
+                setOpen(false);
+                router.push("/(app)/create-organization");
+              }}
+              accessibilityRole="button"
+              className="mt-1 flex-row items-center gap-3 rounded-lg p-3 active:bg-accent"
+            >
+              <View className="h-9 w-9 items-center justify-center rounded-full border border-dashed border-border">
+                <Plus color={colors.mutedForeground} size={18} />
+              </View>
+              <Text variant="muted" className="flex-1">
+                New organization
+              </Text>
+            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>

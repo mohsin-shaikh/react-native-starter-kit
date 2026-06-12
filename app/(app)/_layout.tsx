@@ -51,6 +51,14 @@ export default function AppLayout() {
             presentation: "modal",
           }}
         />
+        <Stack.Screen
+          name="create-organization"
+          options={{
+            headerShown: true,
+            title: "New Organization",
+            presentation: "modal",
+          }}
+        />
       </Stack>
     </AuthGuard>
   );

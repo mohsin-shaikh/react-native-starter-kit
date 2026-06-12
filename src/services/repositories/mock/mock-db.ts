@@ -1,5 +1,4 @@
-import type { AuthTokens } from "@/services/auth/auth.types";
-import type { User } from "@/types";
+import type { Organization, User } from "@/types";
 
 /**
  * In-memory fake backend. This is the ONLY place that pretends to be a server.
@@ -30,9 +29,16 @@ const accounts = new Map<string, MockAccount>([
   ],
 ]);
 
-// Maps an opaque token back to its user — stands in for server-side sessions.
+// Maps an opaque session token back to its user — stands in for server-side
+// sessions (the mock equivalent of better-auth's session cookie).
 const tokenToUserId = new Map<string, string>();
-const ACCESS_TTL_MS = 15 * 60 * 1000; // 15 min
+
+// The tenants the demo user belongs to (an accounting app is multi-tenant).
+const organizations: Organization[] = [
+  { id: "org_acme", name: "Acme Traders" },
+  { id: "org_globex", name: "Globex Pvt Ltd" },
+  { id: "org_initech", name: "Initech LLP" },
+];
 
 export const mockDb = {
   delay<T>(value: T, ms = 600): Promise<T> {
@@ -60,16 +66,19 @@ export const mockDb = {
     return account;
   },
 
-  issueTokens(userId: string): AuthTokens {
-    const accessToken = `mock_access_${userId}_${Date.now()}`;
-    const refreshToken = `mock_refresh_${userId}_${Math.random().toString(36).slice(2)}`;
-    tokenToUserId.set(accessToken, userId);
-    tokenToUserId.set(refreshToken, userId);
-    return { accessToken, refreshToken, expiresAt: Date.now() + ACCESS_TTL_MS };
+  issueSessionToken(userId: string): string {
+    // The user id is embedded (dot-separated) so a token persisted in
+    // SecureStore can survive an app restart even though this map is
+    // in-memory — see userForToken's fallback.
+    const token = `mock_session.${userId}.${Math.random().toString(36).slice(2)}`;
+    tokenToUserId.set(token, userId);
+    return token;
   },
 
   userForToken(token: string): User | undefined {
-    const userId = tokenToUserId.get(token);
+    // Fallback to the id embedded in the token: after a cold start the map is
+    // empty, but seeded accounts (demo@example.com) should still restore.
+    const userId = tokenToUserId.get(token) ?? token.split(".")[1];
     if (!userId) return undefined;
     for (const account of accounts.values()) {
       if (account.user.id === userId) return account.user;
@@ -83,5 +92,18 @@ export const mockDb = {
 
   listUsers(): User[] {
     return Array.from(accounts.values()).map((a) => a.user);
+  },
+
+  listOrganizations(): Organization[] {
+    return [...organizations];
+  },
+
+  createOrganization(name: string): Organization {
+    const org: Organization = {
+      id: `org_${Math.random().toString(36).slice(2, 10)}`,
+      name,
+    };
+    organizations.push(org);
+    return org;
   },
 };

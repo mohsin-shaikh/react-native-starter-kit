@@ -1,55 +1,49 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
 
-import { STORAGE_KEYS } from "@/constants";
-import { zustandStorage } from "@/services/storage/kv-storage";
+import { logger } from "@/lib/logger";
+import { repositories } from "@/services/repositories";
 
 /**
- * The tenant the user is currently operating in. An accounting app is
- * multi-tenant: one user can belong to several organizations and all data
- * (bills, parties, …) is scoped to the active one.
+ * Client-side MIRROR of the session's active organization.
  *
- * Only `activeOrgId` is persisted so a returning user lands back in the same
- * tenant. Swap the seeded `organizations` for a server-driven list (React
- * Query) once there's a backend.
+ * The source of truth is the server session (better-auth's
+ * `session.activeOrganizationId`); the backend restores it into every new
+ * session, so nothing is persisted here. The mirror exists so business-data
+ * query keys and deep components can read the active tenant synchronously.
+ *
+ * - Hydrated by the auth store after login / session restore.
+ * - Updated optimistically by the switch mutation
+ *   (see queries/organization.queries.ts), which owns rollback on failure.
+ *
+ * The org LIST is server state and lives in React Query, not here.
  */
-export interface Organization {
-  id: string;
-  name: string;
-}
-
-const SEED_ORGANIZATIONS = [
-  { id: "org_acme", name: "Acme Traders" },
-  { id: "org_globex", name: "Globex Pvt Ltd" },
-  { id: "org_initech", name: "Initech LLP" },
-] as const satisfies readonly Organization[];
-
-const DEFAULT_ORG = SEED_ORGANIZATIONS[0];
-
 interface OrganizationState {
-  organizations: readonly Organization[];
-  activeOrgId: string;
-  setActiveOrg: (id: string) => void;
+  /** `undefined` = not yet hydrated; `null` = session has no active org. */
+  activeOrgId: string | null | undefined;
+
+  setActiveOrgId: (id: string | null) => void;
+  /** Pull the session's active org. Called by the auth store on sign-in. */
+  hydrateFromSession: () => Promise<void>;
+  /** Back to pre-hydration state. Called by the auth store on sign-out. */
+  reset: () => void;
 }
 
-export const useOrganizationStore = create<OrganizationState>()(
-  persist(
-    (set) => ({
-      organizations: SEED_ORGANIZATIONS,
-      activeOrgId: DEFAULT_ORG.id,
-      setActiveOrg: (id) => set({ activeOrgId: id }),
-    }),
-    {
-      name: STORAGE_KEYS.ACTIVE_ORG,
-      storage: createJSONStorage(() => zustandStorage),
-      // Persist only the selection; the org list is seeded/fetched fresh.
-      partialize: (s) => ({ activeOrgId: s.activeOrgId }),
-    },
-  ),
-);
+export const useOrganizationStore = create<OrganizationState>((set) => ({
+  activeOrgId: undefined,
 
-/** The currently active organization (falls back to the first if stale). */
-export const selectActiveOrg = (s: OrganizationState): Organization =>
-  s.organizations.find((o) => o.id === s.activeOrgId) ??
-  s.organizations[0] ??
-  DEFAULT_ORG;
+  setActiveOrgId: (id) => set({ activeOrgId: id }),
+
+  hydrateFromSession: async () => {
+    try {
+      const id = await repositories.organizations.getActiveOrganizationId();
+      set({ activeOrgId: id });
+    } catch (error) {
+      logger.warn("organization.hydrateFromSession failed", {
+        error: String(error),
+      });
+      set({ activeOrgId: null });
+    }
+  },
+
+  reset: () => set({ activeOrgId: undefined }),
+}));

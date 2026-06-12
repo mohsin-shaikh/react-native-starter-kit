@@ -9,4 +9,8 @@ export const qk = {
     list: (cursor?: string) =>
       [...qk.user.all, "list", cursor ?? "first"] as const,
   },
+  organization: {
+    all: ["organization"] as const,
+    list: () => [...qk.organization.all, "list"] as const,
+  },
 } as const;

@@ -5,8 +5,9 @@
 
 /** Keys used with SecureStore / AsyncStorage. Namespaced to avoid collisions. */
 export const STORAGE_KEYS = {
-  ACCESS_TOKEN: "auth.accessToken",
-  REFRESH_TOKEN: "auth.refreshToken",
+  // The real session cookie is persisted by better-auth's Expo plugin under
+  // its own "starterkit" prefix; this key is only for the mock backend.
+  MOCK_SESSION: "auth.mockSession",
   ONBOARDING_STATE: "onboarding.state",
   THEME: "preferences.theme",
   ACTIVE_ORG: "organization.activeId",
@@ -28,6 +29,3 @@ export const ROUTES = {
   PROFILE: "/(app)/(tabs)/profile",
   SETTINGS: "/(app)/(tabs)/settings",
 } as const;
-
-/** How many ms before token expiry we proactively refresh. */
-export const TOKEN_REFRESH_THRESHOLD_MS = 60_000;

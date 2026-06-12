@@ -1,22 +1,38 @@
+import { STORAGE_KEYS } from "@/constants";
 import { AppError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import type {
   AuthRepository,
-  AuthSession,
-  AuthTokens,
   LoginCredentials,
   SignupData,
 } from "@/services/auth/auth.types";
+import { secureStorage } from "@/services/storage/secure-storage";
 import type { User } from "@/types";
 
 import { mockDb } from "./mock-db";
 
 /**
- * Dummy auth backend. Mirrors the request/response shape a real provider
- * would expose so the swap is mechanical. Throws normalized AppErrors exactly
- * as the HTTP client would, so error-handling UI is exercised end to end.
+ * Dummy auth backend. Mirrors the session-based contract the better-auth
+ * repository implements so the swap is mechanical: one opaque session token,
+ * persisted in SecureStore by this class (better-auth's Expo plugin does the
+ * same with its session cookie). Throws normalized AppErrors so
+ * error-handling UI is exercised end to end.
  */
 export class MockAuthRepository implements AuthRepository {
-  async login({ email, password }: LoginCredentials): Promise<AuthSession> {
+  private sessionToken: string | null = null;
+
+  private async startSession(userId: string): Promise<void> {
+    this.sessionToken = mockDb.issueSessionToken(userId);
+    await secureStorage.setItem(STORAGE_KEYS.MOCK_SESSION, this.sessionToken);
+  }
+
+  private async endSession(): Promise<void> {
+    if (this.sessionToken) mockDb.revoke(this.sessionToken);
+    this.sessionToken = null;
+    await secureStorage.removeItem(STORAGE_KEYS.MOCK_SESSION);
+  }
+
+  async login({ email, password }: LoginCredentials): Promise<User> {
     const account = mockDb.findByEmail(email);
     if (!account || account.password !== password) {
       throw new AppError({
@@ -25,11 +41,11 @@ export class MockAuthRepository implements AuthRepository {
         message: "Invalid email or password.",
       });
     }
-    const tokens = mockDb.issueTokens(account.user.id);
-    return mockDb.delay({ user: account.user, tokens });
+    await this.startSession(account.user.id);
+    return mockDb.delay(account.user);
   }
 
-  async signup(data: SignupData): Promise<AuthSession> {
+  async signup(data: SignupData): Promise<User> {
     if (mockDb.findByEmail(data.email)) {
       throw new AppError({
         kind: "conflict",
@@ -39,42 +55,36 @@ export class MockAuthRepository implements AuthRepository {
       });
     }
     const account = mockDb.createAccount(data);
-    const tokens = mockDb.issueTokens(account.user.id);
-    return mockDb.delay({ user: account.user, tokens });
+    await this.startSession(account.user.id);
+    return mockDb.delay(account.user);
   }
 
-  async logout(refreshToken: string): Promise<void> {
-    mockDb.revoke(refreshToken);
+  async logout(): Promise<void> {
+    await this.endSession();
     return mockDb.delay(undefined, 200);
   }
 
-  async refresh(refreshToken: string): Promise<AuthTokens> {
-    const user = mockDb.userForToken(refreshToken);
+  async restoreSession(): Promise<User | null> {
+    const token = await secureStorage.getItem(STORAGE_KEYS.MOCK_SESSION);
+    if (!token) return null;
+    const user = mockDb.userForToken(token);
     if (!user) {
-      throw new AppError({
-        kind: "unauthorized",
-        status: 401,
-        message: "Session expired.",
-      });
+      logger.info("mockAuth.restoreSession: stale session token");
+      await secureStorage.removeItem(STORAGE_KEYS.MOCK_SESSION);
+      return null;
     }
-    mockDb.revoke(refreshToken); // rotate
-    return mockDb.delay(mockDb.issueTokens(user.id), 300);
-  }
-
-  async me(accessToken: string): Promise<User> {
-    const user = mockDb.userForToken(accessToken);
-    if (!user) {
-      throw new AppError({
-        kind: "unauthorized",
-        status: 401,
-        message: "Session expired.",
-      });
-    }
+    this.sessionToken = token;
     return mockDb.delay(user, 200);
   }
 
   async requestPasswordReset(_email: string): Promise<void> {
     // Always succeeds (never reveal whether an email exists).
     return mockDb.delay(undefined, 400);
+  }
+
+  getAuthHeaders(): Record<string, string> {
+    return this.sessionToken
+      ? { Authorization: `Bearer ${this.sessionToken}` }
+      : {};
   }
 }

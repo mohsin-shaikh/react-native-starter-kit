@@ -10,7 +10,7 @@ export interface RequestOptions {
   headers?: Record<string, string>;
   /** Abort after this many ms. */
   timeoutMs?: number;
-  /** Skip the auth token (e.g. for login/refresh). */
+  /** Skip auth headers (e.g. for public endpoints). */
   skipAuth?: boolean;
   signal?: AbortSignal;
 }
@@ -24,13 +24,17 @@ export interface HttpClient {
 }
 
 /**
- * The client asks this provider for the current token and what to do on 401.
- * Implemented by the auth layer — breaks the circular dependency between
- * "the client needs a token" and "auth needs the client".
+ * The client asks this provider for auth headers (better-auth: the session
+ * cookie) and what to do on 401. Implemented by the auth layer — breaks the
+ * circular dependency between "the client needs credentials" and "auth needs
+ * the client".
+ *
+ * Note there is no refresh hook: better-auth sessions are validated
+ * server-side per request, so a 401 is final — `onAuthFailure` flips the app
+ * to signed-out.
  */
-export interface AuthTokenProvider {
-  getAccessToken(): Promise<string | null>;
-  /** Called on 401. Return a fresh token to retry once, or null to give up. */
-  refreshAccessToken(): Promise<string | null>;
+export interface AuthHeadersProvider {
+  getAuthHeaders(): Record<string, string>;
+  /** Called on 401 — the session is gone; force sign-out. */
   onAuthFailure(): void;
 }
