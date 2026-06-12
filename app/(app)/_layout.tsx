@@ -19,6 +19,38 @@ export default function AppLayout() {
           name="settings"
           options={{ headerShown: true, title: "Settings" }}
         />
+        <Stack.Screen
+          name="create-invoice"
+          options={{
+            headerShown: true,
+            title: "New Invoice",
+            presentation: "modal",
+          }}
+        />
+        <Stack.Screen
+          name="create-purchase"
+          options={{
+            headerShown: true,
+            title: "New Purchase",
+            presentation: "modal",
+          }}
+        />
+        <Stack.Screen
+          name="create-customer"
+          options={{
+            headerShown: true,
+            title: "New Customer",
+            presentation: "modal",
+          }}
+        />
+        <Stack.Screen
+          name="create-vendor"
+          options={{
+            headerShown: true,
+            title: "New Vendor",
+            presentation: "modal",
+          }}
+        />
       </Stack>
     </AuthGuard>
   );

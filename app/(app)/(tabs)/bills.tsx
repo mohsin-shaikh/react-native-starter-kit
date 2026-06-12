@@ -1,9 +1,11 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Screen } from "@/components/layout/screen";
 import { Card } from "@/components/ui/card";
+import { Fab } from "@/components/ui/fab";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Text } from "@/components/ui/text";
 
@@ -27,6 +29,7 @@ const COPY: Record<BillsTab, { title: string; body: string }> = {
 
 export default function BillsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [tab, setTab] = useState<BillsTab>("invoice");
   const copy = COPY[tab];
 
@@ -43,6 +46,16 @@ export default function BillsScreen() {
           </Card>
         </View>
       </Screen>
+      <Fab
+        accessibilityLabel={`Create ${tab}`}
+        onPress={() =>
+          router.push(
+            tab === "invoice"
+              ? "/(app)/create-invoice"
+              : "/(app)/create-purchase",
+          )
+        }
+      />
     </View>
   );
 }
